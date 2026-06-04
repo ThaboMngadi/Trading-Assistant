@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Assistant</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f13;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column}
+.header{background:#1a1a24;border-bottom:1px solid #2a2a3a;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#e84040,#c0392b);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff}
+.logo-text{font-size:15px;font-weight:600;color:#fff}
+.logo-sub{font-size:11px;color:#888}
+.status{display:flex;align-items:center;gap:6px;font-size:12px;color:#888}
+.dot{width:8px;height:8px;border-radius:50%;background:#444}
+.dot.on{background:#2ecc71}
+.dot.err{background:#e74c3c}
+.screen{display:none;flex:1;flex-direction:column;padding:16px;max-width:600px;margin:0 auto;width:100%}
+.screen.active{display:flex}
+.card{background:#1a1a24;border:1px solid #2a2a3a;border-radius:12px;padding:20px;margin-bottom:12px}
+.card h2{font-size:16px;font-weight:600;color:#fff;margin-bottom:4px}
+.card p{font-size:13px;color:#888;margin-bottom:16px;line-height:1.5}
+label{display:block;font-size:12px;color:#aaa;margin-bottom:6px;margin-top:12px}
+input,select{width:100%;padding:10px 12px;background:#0f0f13;border:1px solid #2a2a3a;border-radius:8px;color:#e0e0e0;font-size:13px;outline:none}
+input:focus,select:focus{border-color:#e84040}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:12px;transition:opacity .2s}
+.btn-primary{background:#e84040;color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-secondary{background:#2a2a3a;color:#e0e0e0}
+.btn-secondary:hover{opacity:.85}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.account-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.account-item{background:#0f0f13;border:1px solid #2a2a3a;border-radius:8px;padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:border-color .2s}
+.account-item:hover,.account-item.selected{border-color:#e84040}
+.account-item .name{font-size:13px;font-weight:500;color:#fff}
+.account-item .bal{font-size:12px;color:#888}
+.account-item .badge{font-size:10px;padding:2px 8px;border-radius:20px;background:#2a2a3a;color:#aaa}
+.account-item.selected .badge{background:#e84040;color:#fff}
+.chat-area{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:8px;min-height:300px}
+.msg{max-width:88%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.6}
+.msg.ai{background:#1a1a24;border:1px solid #2a2a3a;color:#e0e0e0;align-self:flex-start}
+.msg.user{background:#c0392b;color:#fff;align-self:flex-end}
+.msg.sys{background:#1a1a24;border:1px solid #2a2a3a;color:#888;align-self:center;font-size:11px;padding:5px 12px;border-radius:20px;text-align:center;max-width:100%}
+.confirm-box{background:#1a1a24;border:1px solid #e84040;border-radius:12px;padding:14px;margin-top:8px}
+.confirm-box h4{font-size:13px;font-weight:600;color:#fff;margin-bottom:10px}
+.trade-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #2a2a3a;font-size:13px}
+.trade-row:last-child{border:none}
+.trade-row .lbl{color:#888}
+.trade-row .val{font-weight:500;color:#fff}
+.val.buy{color:#2ecc71}
+.val.sell{color:#e74c3c}
+.btn-row{display:flex;gap:8px;margin-top:10px}
+.btn-row .btn{margin:0;flex:1;padding:10px}
+.input-wrap{background:#1a1a24;border:1px solid #2a2a3a;border-radius:12px;padding:10px}
+.upload-prev{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#0f0f13;border-radius:8px;margin-bottom:8px;font-size:12px;color:#888}
+.upload-prev img{width:44px;height:32px;object-fit:cover;border-radius:4px}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.icon-btn{width:38px;height:38px;border-radius:8px;cursor:pointer;border:1px solid #2a2a3a;background:#0f0f13;color:#aaa;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.icon-btn:hover{background:#2a2a3a}
+textarea{flex:1;padding:9px 11px;background:#0f0f13;border:1px solid #2a2a3a;border-radius:8px;color:#e0e0e0;font-family:inherit;font-size:13px;resize:none;min-height:38px;max-height:100px;line-height:1.5}
+textarea:focus{outline:none;border-color:#e84040}
+.send-btn{width:38px;height:38px;border-radius:8px;border:none;background:#e84040;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.send-btn:hover{opacity:.85}
+.send-btn:disabled{opacity:.4;cursor:not-allowed}
+.info{font-size:12px;color:#888;text-align:center;padding:8px;line-height:1.5}
+.err{color:#e74c3c;font-size:12px;margin-top:6px}
+.acct-bar{display:flex;gap:8px;margin-bottom:10px}
+.acct-card{flex:1;background:#1a1a24;border:1px solid #2a2a3a;border-radius:8px;padding:10px 12px}
+.acct-card .lbl{font-size:11px;color:#888;margin-bottom:2px}
+.acct-card .val{font-size:15px;font-weight:600;color:#fff}
+.typing::after{content:'...';animation:blink 1s steps(3,end) infinite}
+@keyframes blink{0%,100%{content:'.'}33%{content:'..'}66%{content:'...'}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">TA</div>
+    <div>
+      <div class="logo-text">Trading Assistant</div>
+      <div class="logo-sub">cTrader + Claude AI</div>
+    </div>
+  </div>
+  <div class="status">
+    <div class="dot" id="dot"></div>
+    <span id="statusTxt">Not connected</span>
+  </div>
+</div>
+
+<!-- SCREEN 1: Setup -->
+<div class="screen active" id="s1">
+  <div class="card" style="margin-top:16px">
+    <h2>Configure</h2>
+    <p>Enter your API keys to connect Claude AI and your cTrader account. Keys are stored in your browser only.</p>
+    <label>Anthropic API key</label>
+    <input type="password" id="anthropicKey" placeholder="sk-ant-..." />
+    <label>cTrader Client ID</label>
+    <input type="text" id="clientId" placeholder="30006_..." />
+    <label>cTrader Client Secret</label>
+    <input type="password" id="clientSecret" placeholder="Your client secret" />
+    <label>Risk per trade (%)</label>
+    <input type="number" id="riskPct" value="2" min="0.5" max="10" step="0.5" />
+    <div class="err" id="setupErr"></div>
+    <button class="btn btn-primary" onclick="startOAuth()">Connect cTrader Account</button>
+    <p class="info">You'll be redirected to cTrader to authorise trading access, then returned here automatically.</p>
+  </div>
+</div>
+
+<!-- SCREEN 2: Account Select -->
+<div class="screen" id="s2">
+  <div class="card" style="margin-top:16px">
+    <h2>Select account</h2>
+    <p>Choose the account you want to trade with.</p>
+    <div class="account-list" id="accountList"></div>
+    <button class="btn btn-primary" id="selectAccBtn" onclick="selectAccount()" disabled>Continue</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: Chat -->
+<div class="screen" id="s3" style="gap:10px">
+  <div class="acct-bar">
+    <div class="acct-card">
+      <div class="lbl">Account</div>
+      <div class="val" id="acctName">—</div>
+    </div>
+    <div class="acct-card">
+      <div class="lbl">Balance</div>
+      <div class="val" id="acctBal">—</div>
+    </div>
+    <div class="acct-card">
+      <div class="lbl">Risk</div>
+      <div class="val" id="acctRisk">—</div>
+    </div>
+  </div>
+  <div class="chat-area" id="chatArea"></div>
+  <div class="confirm-box" id="confirmBox" style="display:none">
+    <h4>⚠ Confirm trade</h4>
+    <div id="tradeRows"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="cancelTrade()">Cancel</button>
+      <button class="btn btn-primary" onclick="executeTrade()">Execute</button>
+    </div>
+  </div>
+  <div class="input-wrap">
+    <div class="upload-prev" id="uploadPrev" style="display:none">
+      <img id="prevImg" src="" alt="chart"/>
+      <span id="prevName">chart.png</span>
+      <span onclick="clearUpload()" style="margin-left:auto;cursor:pointer;font-size:16px">✕</span>
+    </div>
+    <div class="input-row">
+      <label class="icon-btn" for="chartFile" title="Upload chart">📷
+        <input type="file" id="chartFile" accept="image/*" style="display:none" onchange="handleFile(event)"/>
+      </label>
+      <textarea id="msgInput" placeholder="Describe your setup... e.g. V75 H1, rejected resistance at 845.20, bearish engulfing, want to sell" rows="1" onkeydown="handleKey(event)" oninput="resize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CTRADER_AUTH = 'https://connect.spotware.com/apps/authorize';
+const CTRADER_TOKEN = 'https://connect.spotware.com/apps/token';
+const CTRADER_API = 'https://connect.spotware.com/apps';
+const REDIRECT = window.location.origin + window.location.pathname;
+
+let state = {
+  anthropicKey:'', clientId:'', clientSecret:'',
+  riskPct:2, accessToken:'', accountId:'',
+  accountName:'', balance:0, currency:'USD',
+  uploadedImg:null, uploadedName:'', pendingTrade:null,
+  messages:[]
+};
+
+function save(){localStorage.setItem('ta_state',JSON.stringify({
+  anthropicKey:state.anthropicKey,clientId:state.clientId,
+  clientSecret:state.clientSecret,riskPct:state.riskPct,
+  accessToken:state.accessToken,accountId:state.accountId,
+  accountName:state.accountName,balance:state.balance,currency:state.currency
+}));}
+
+function load(){
+  const d=localStorage.getItem('ta_state');
+  if(d){const p=JSON.parse(d);Object.assign(state,p);}
+}
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setStatus(txt,on,err){
+  document.getElementById('statusTxt').textContent=txt;
+  const d=document.getElementById('dot');
+  d.className='dot'+(on?' on':err?' err':'');
+}
+
+function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+
+function handleFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    state.uploadedImg=ev.target.result.split(',')[1];
+    state.uploadedName=f.name;
+    document.getElementById('prevImg').src=ev.target.result;
+    document.getElementById('prevName').textContent=f.name;
+    document.getElementById('uploadPrev').style.display='flex';
+  };r.readAsDataURL(f);
+}
+
+function clearUpload(){
+  state.uploadedImg=null;state.uploadedName='';
+  document.getElementById('uploadPrev').style.display='none';
+  document.getElementById('chartFile').value='';
+}
+
+function addMsg(role,text){
+  const a=document.getElementById('chatArea');
+  const d=document.createElement('div');
+  d.className='msg '+role;d.textContent=text;
+  a.appendChild(d);a.scrollTop=a.scrollHeight;return d;
+}
+
+function addTyping(){
+  const a=document.getElementById('chatArea');
+  const d=document.createElement('div');
+  d.className='msg ai';d.innerHTML='<span class="typing">Analysing</span>';
+  a.appendChild(d);a.scrollTop=a.scrollHeight;return d;
+}
+
+// OAuth flow
+function startOAuth(){
+  const key=document.getElementById('anthropicKey').value.trim();
+  const cid=document.getElementById('clientId').value.trim();
+  const cs=document.getElementById('clientSecret').value.trim();
+  const risk=parseFloat(document.getElementById('riskPct').value)||2;
+  if(!key||!cid||!cs){document.getElementById('setupErr').textContent='Please fill in all fields.';return;}
+  state.anthropicKey=key;state.clientId=cid;state.clientSecret=cs;state.riskPct=risk;
+  save();
+  const params=new URLSearchParams({
+    response_type:'code',client_id:cid,
+    redirect_uri:REDIRECT,scope:'trading'
+  });
+  window.location.href=CTRADER_AUTH+'?'+params.toString();
+}
+
+async function exchangeCode(code){
+  const body=new URLSearchParams({
+    grant_type:'authorization_code',code,
+    redirect_uri:REDIRECT,
+    client_id:state.clientId,
+    client_secret:state.clientSecret
+  });
+  const r=await fetch(CTRADER_TOKEN,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+  const d=await r.json();
+  if(!d.access_token)throw new Error(d.error_description||'Token exchange failed');
+  return d.access_token;
+}
+
+async function getAccounts(token){
+  const r=await fetch(`${CTRADER_API}/${state.clientId}/tradingaccounts?token=${token}`);
+  const d=await r.json();
+  return d.data||[];
+}
+
+function renderAccounts(accounts){
+  const list=document.getElementById('accountList');
+  list.innerHTML='';
+  accounts.forEach(a=>{
+    const div=document.createElement('div');
+    div.className='account-item';
+    div.innerHTML=`<div><div class="name">${a.brokerName||'cTrader'} — ${a.login||a.accountId}</div><div class="bal">${a.balance||0} ${a.currency||'USD'}</div></div><span class="badge">${a.isLive?'Live':'Demo'}</span>`;
+    div.onclick=()=>{
+      document.querySelectorAll('.account-item').forEach(i=>i.classList.remove('selected'));
+      div.classList.add('selected');
+      state.accountId=a.accountId||a.ctidTraderAccountId;
+      state.accountName=(a.brokerName||'cTrader')+' '+( a.login||a.accountId);
+      state.balance=parseFloat(a.balance)||0;
+      state.currency=a.currency||'USD';
+      document.getElementById('selectAccBtn').disabled=false;
+    };
+    list.appendChild(div);
+  });
+}
+
+function selectAccount(){
+  if(!state.accountId)return;
+  save();
+  document.getElementById('acctName').textContent=state.accountName;
+  document.getElementById('acctBal').textContent=state.balance.toFixed(2)+' '+state.currency;
+  document.getElementById('acctRisk').textContent=state.riskPct+'% / '+(state.balance*state.riskPct/100).toFixed(2);
+  setStatus('Connected',true,false);
+  show('s3');
+  addMsg('ai','Connected! I\'m ready to analyse your setups. Describe your trade or upload a chart screenshot and I\'ll analyse it before anything executes.');
+}
+
+// Claude analysis
+async function sendMsg(){
+  if(!state.accessToken){addMsg('sys','Not connected to cTrader.');return;}
+  const input=document.getElementById('msgInput');
+  const text=input.value.trim();
+  if(!text&&!state.uploadedImg)return;
+  const display=text||(state.uploadedImg?'Chart uploaded':'');
+  addMsg('user',display+(state.uploadedImg?' [chart]':''));
+  input.value='';input.style.height='auto';
+  document.getElementById('sendBtn').disabled=true;
+  const loading=addTyping();
+
+  const content=state.uploadedImg
+    ?[{type:'image',source:{type:'base64',media_type:'image/png',data:state.uploadedImg}},{type:'text',text:text||'Analyse this chart.'}]
+    :text;
+
+  state.messages.push({role:'user',content});
+
+  try{
+    const sys=`You are a trading assistant for Thabo, an experienced forex trader. He trades NASDAQ, Gold, and currencies on cTrader via FxPro.
+Analyse his chart description or screenshot. Identify the setup. If a valid trade exists output EXACTLY this block at the end:
+TRADE: {"symbol":"SYMBOL","direction":"BUY" or "SELL","volume":0.01,"stopLoss":0,"takeProfit":0,"comment":"brief reason"}
+Volume should reflect risk: balance=${state.balance} ${state.currency}, risk=${state.riskPct}%.
+If setup is unclear or invalid do NOT output a TRADE block — just give feedback.
+Be concise: confirm what you see, your assessment, then trade block if valid.`;
+
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':state.anthropicKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:sys,messages:state.messages})
+    });
+    const d=await r.json();
+    if(d.error)throw new Error(d.error.message);
+    const reply=d.content[0].text;
+    state.messages.push({role:'assistant',content:reply});
+    loading.remove();
+    addMsg('ai',reply.replace(/TRADE:\s*\{[^}]+\}/,'').trim());
+    const trade=extractTrade(reply);
+    if(trade)showConfirm(trade);
+  }catch(e){
+    loading.remove();
+    addMsg('ai','Error: '+e.message);
+  }
+  clearUpload();
+  document.getElementById('sendBtn').disabled=false;
+}
+
+function extractTrade(text){
+  const m=text.match(/TRADE:\s*(\{[^}]+\})/);
+  if(!m)return null;
+  try{return JSON.parse(m[1]);}catch{return null;}
+}
+
+function showConfirm(trade){
+  state.pendingTrade=trade;
+  const box=document.getElementById('confirmBox');
+  const dir=trade.direction==='BUY'?'buy':'sell';
+  document.getElementById('tradeRows').innerHTML=`
+    <div class="trade-row"><span class="lbl">Symbol</span><span class="val">${trade.symbol}</span></div>
+    <div class="trade-row"><span class="lbl">Direction</span><span class="val ${dir}">${trade.direction}</span></div>
+    <div class="trade-row"><span class="lbl">Volume</span><span class="val">${trade.volume} lots</span></div>
+    <div class="trade-row"><span class="lbl">Stop loss</span><span class="val">${trade.stopLoss}</span></div>
+    <div class="trade-row"><span class="lbl">Take profit</span><span class="val">${trade.takeProfit}</span></div>
+    <div class="trade-row"><span class="lbl">Reason</span><span class="val">${trade.comment||'—'}</span></div>`;
+  box.style.display='block';
+}
+
+function cancelTrade(){
+  state.pendingTrade=null;
+  document.getElementById('confirmBox').style.display='none';
+  addMsg('sys','Trade cancelled.');
+}
+
+async function executeTrade(){
+  if(!state.pendingTrade)return;
+  document.getElementById('confirmBox').style.display='none';
+  const t=state.pendingTrade;state.pendingTrade=null;
+  addMsg('sys','Executing trade...');
+  try{
+    const body={
+      symbolName:t.symbol,
+      tradeSide:t.direction,
+      volume:Math.round(t.volume*100),
+      stopLoss:t.stopLoss||undefined,
+      takeProfit:t.takeProfit||undefined,
+      comment:t.comment||'TradingAssistant'
+    };
+    const r=await fetch(`${CTRADER_API}/${state.accountId}/market?token=${state.accessToken}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    const d=await r.json();
+    if(d.errorCode)throw new Error(d.description||d.errorCode);
+    addMsg('ai',`✓ Trade executed! ${t.direction} ${t.symbol} ${t.volume} lots. Order ID: ${d.orderId||d.clientMsgId||'placed'}`);
+  }catch(e){
+    addMsg('ai','Trade failed: '+e.message+'. Please place manually in cTrader.');
+  }
+}
+
+// Boot — check for OAuth callback
+async function boot(){
+  load();
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get('code');
+  const error=params.get('error');
+
+  if(error){
+    setStatus('Auth error',false,true);
+    show('s1');
+    document.getElementById('setupErr').textContent='cTrader authorisation failed: '+error;
+    return;
+  }
+
+  if(code){
+    window.history.replaceState({},'',window.location.pathname);
+    setStatus('Connecting...',false,false);
+    try{
+      state.accessToken=await exchangeCode(code);
+      save();
+      setStatus('Loading accounts...',false,false);
+      const accounts=await getAccounts(state.accessToken);
+      if(!accounts.length)throw new Error('No accounts found');
+      renderAccounts(accounts);
+      show('s2');
+      setStatus('Choose account',false,false);
+    }catch(e){
+      setStatus('Error',false,true);
+      show('s1');
+      document.getElementById('setupErr').textContent='Connection failed: '+e.message;
+    }
+    return;
+  }
+
+  if(state.accessToken&&state.accountId){
+    document.getElementById('acctName').textContent=state.accountName||'cTrader';
+    document.getElementById('acctBal').textContent=state.balance.toFixed(2)+' '+(state.currency||'USD');
+    document.getElementById('acctRisk').textContent=state.riskPct+'% / '+(state.balance*state.riskPct/100).toFixed(2);
+    setStatus('Connected',true,false);
+    show('s3');
+    addMsg('ai','Welcome back! Ready to analyse your setups.');
+    return;
+  }
+
+  if(state.anthropicKey){
+    document.getElementById('anthropicKey').value=state.anthropicKey;
+    document.getElementById('clientId').value=state.clientId;
+  }
+  show('s1');
+}
+
+boot();
+</script>
+</body>
+</html>
